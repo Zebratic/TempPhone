@@ -16,6 +16,7 @@ using System.Web;
 using System.Windows.Forms;
 using TempPhone.Properties;
 using WebSocketSharp;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace TempPhone
 {
@@ -80,9 +81,20 @@ namespace TempPhone
                     numbers[cbNumbersList.SelectedIndex].messages = numbers[cbNumbersList.SelectedIndex].messages.OrderByDescending(x => x.timestamp).ToList();
                 });
 
+                // get scroll position
+                lvMessages.Invoke((MethodInvoker)delegate { lvMessages.BeginUpdate(); }); // begin update to prevent flickering
+                Point scrollpos = new Point();
+                lvMessages.Invoke((MethodInvoker)delegate { scrollpos = lvMessages.AutoScrollOffset; });
+                List<int> selecteditems = new List<int>();
+                lvMessages.Invoke((MethodInvoker)delegate
+                {
+                    foreach (ListViewItem item in lvMessages.SelectedItems)
+                        selecteditems.Add(item.Index);
+                });
+
                 if (isCurrentNumber && !copyMenu.Visible)
                     lvMessages.Invoke((MethodInvoker)delegate { lvMessages.Items.Clear(); }); // clear listview
-
+                
                 foreach (Message message in messages)
                 {
                     string[] arr = new string[4];
@@ -142,6 +154,16 @@ namespace TempPhone
                 if (lvMessages.Items.Count == 0 && isCurrentNumber && !copyMenu.Visible)
                     lvMessages.Invoke((MethodInvoker)delegate { lvMessages.Items.Add(new ListViewItem(new string[] { "No Messages", "", "" })); });
 
+                lvMessages.Invoke((MethodInvoker)delegate { lvMessages.AutoScrollOffset = scrollpos; }); // set scroll position
+                lvMessages.Invoke((MethodInvoker)delegate
+                {
+                    // select previously selected items
+                    foreach (int index in selecteditems)
+                        lvMessages.Items[index].Selected = true;
+                });
+                lvMessages.Invoke((MethodInvoker)delegate { lvMessages.EndUpdate(); }); // end update to prevent flickering
+
+
                 quackr_wrapper.saveNumbers(numbers);
             }
             catch (Exception ex)
@@ -170,7 +192,7 @@ namespace TempPhone
                 cbRefreshInterval.SelectedIndex = 1; // def ault to 5 seconds
 
             if (settings.startMinimized)
-            {
+            {   
                 this.WindowState = FormWindowState.Minimized;
                 this.Hide();
                 this.ShowInTaskbar = false;

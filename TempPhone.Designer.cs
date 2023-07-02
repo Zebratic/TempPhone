@@ -31,7 +31,7 @@
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(TempPhone));
             this.cbNumbersList = new System.Windows.Forms.ComboBox();
-            this.lvMessages = new System.Windows.Forms.ListView();
+            this.lvMessages = new ListViewNF();
             this.colTimestamp = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.colSender = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.colMessage = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
@@ -304,7 +304,7 @@
         #endregion
 
         private System.Windows.Forms.ComboBox cbNumbersList;
-        private System.Windows.Forms.ListView lvMessages;
+        private ListViewNF lvMessages;
         private System.Windows.Forms.ColumnHeader colTimestamp;
         private System.Windows.Forms.ColumnHeader colSender;
         private System.Windows.Forms.ColumnHeader colMessage;
