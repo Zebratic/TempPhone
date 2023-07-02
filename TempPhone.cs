@@ -339,7 +339,7 @@ namespace TempPhone
             while (true)
             {
                 foreach (var number in numbers)
-                    if (number.logmessages)
+                    if (number.logmessages || number.number == numbers[cbNumbersList.SelectedIndex].number)
                         quackr_wrapper.requestMessages(number.number);
 
                 Thread.Sleep(settings.refreshinterval * 1000);
