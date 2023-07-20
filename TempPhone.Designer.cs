@@ -145,14 +145,14 @@
             // byAPIToolStripMenuItem
             // 
             this.byAPIToolStripMenuItem.Name = "byAPIToolStripMenuItem";
-            this.byAPIToolStripMenuItem.Size = new System.Drawing.Size(164, 22);
+            this.byAPIToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.byAPIToolStripMenuItem.Text = "By API";
             this.byAPIToolStripMenuItem.Click += new System.EventHandler(this.byAPIToolStripMenuItem_Click);
             // 
             // byNumbersjsonToolStripMenuItem
             // 
             this.byNumbersjsonToolStripMenuItem.Name = "byNumbersjsonToolStripMenuItem";
-            this.byNumbersjsonToolStripMenuItem.Size = new System.Drawing.Size(164, 22);
+            this.byNumbersjsonToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.byNumbersjsonToolStripMenuItem.Text = "By Numbers.json";
             this.byNumbersjsonToolStripMenuItem.Click += new System.EventHandler(this.byNumbersjsonToolStripMenuItem_Click);
             // 

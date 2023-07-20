@@ -1,15 +1,18 @@
 ﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 using System.Windows.Forms;
+using TempPhone.Properties;
 using WebSocketSharp;
 
 namespace TempPhone
@@ -17,7 +20,6 @@ namespace TempPhone
     public class quackr_wrapper
     {
         public static WebSocket ws { get; set; }
-        public static string wss = "wss://s-usc1f-nss-2526.firebaseio.com/.ws?v=5&ns=quackr-31041";
         public static List<Number> loadNumbers() => JsonConvert.DeserializeObject<List<Number>>(File.ReadAllText("numbers.json"));
         public static List<Number> fetchNumbers()
         {
@@ -33,6 +35,7 @@ namespace TempPhone
             if (ws != null && ws.ReadyState == WebSocketState.Open)
             {
                 string payload = "{\"t\":\"d\",\"d\":{\"r\":2,\"a\":\"g\",\"b\":{\"p\":\"/messages/" + number + "\",\"q\":{\"l\":40,\"vf\":\"r\",\"i\":\".key\"}}}}";
+                Console.WriteLine("[>] " + payload);
                 new Thread(() => ws.Send(payload)).Start();
             }
         }

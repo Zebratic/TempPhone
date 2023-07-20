@@ -16,9 +16,9 @@ using System.Web;
 using System.Windows.Forms;
 using TempPhone.Properties;
 using WebSocketSharp;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace TempPhone
+
 {
     public partial class TempPhone : Form
     {
@@ -43,42 +43,70 @@ namespace TempPhone
                     LoadNumbers();
                     messageloggerthread.Start();
                 }
+                Console.WriteLine("[<] " + e.Data.Replace("\n", " ").Replace("\r", ""));
 
                 List<Message> messages = new List<Message>();
                 dynamic json = JsonConvert.DeserializeObject(e.Data);
 
                 // check if message list incoming
-                if (json.d.b != null && json.d.b.s == "ok" && json.d.b.d != null)
+                if (json.d.b != null && json.d.b.s == "ok")
                 {
-                    foreach (dynamic message in json.d.b.d)
+                    if (json.d.b.d == null)
                     {
-                        messages.Add(new Message
+                        lvMessages.Invoke((MethodInvoker)delegate
                         {
-                            locale = message.Value.locale,
-                            message = HttpUtility.HtmlDecode(message.Value.message.ToString()).Replace("\n", " ").Replace("\r", ""),
-                            recipient = message.Value.recipient,
-                            sender = message.Value.sender,
-                            timestamp = message.Value.timestamp
+                            lvMessages.Items.Clear();
+                            lvMessages.Items.Add(new ListViewItem(new string[] { "No Messages", "", "" }));
                         });
+                        return;
+                    }
+                    else
+                    {
+                        foreach (dynamic message in json.d.b.d)
+                        {
+                            messages.Add(new Message
+                            {
+                                locale = message.Value.locale,
+                                message = HttpUtility.HtmlDecode(message.Value.message.ToString()).Replace("\n", " ").Replace("\r", ""),
+                                recipient = message.Value.recipient,
+                                sender = message.Value.sender,
+                                timestamp = message.Value.timestamp
+                            });
+                        }
                     }
                 }
-                else
+                else if (e.Data.Contains("firebaseio.com") && !e.Data.Contains("\"v\":\"5\""))
+                {
+                    string new_wss = json.d.d;
+                    if (new_wss.Contains("firebaseio.com"))
+                    {
+                        MessageBox.Show("Found new connection url! Reconncting...", "TempPhone", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        settings.wss = "wss://" + new_wss + "/.ws?v=5&ns=quackr-31041";
+                        settings.Save();
+                        ConnectToWebsocket();
+                    }
                     return;
+                }
+                else return;
 
                 // sort messages by timestamp so newest messages are at the top
                 messages = messages.OrderByDescending(x => x.timestamp).ToList();
                 bool isCurrentNumber = false;
                 cbNumbersList.Invoke((MethodInvoker)delegate
                 {
-                    isCurrentNumber = numbers[cbNumbersList.SelectedIndex].number == messages.First().recipient;
+                    try
+                    {
+                        isCurrentNumber = numbers[cbNumbersList.SelectedIndex].number == messages.First().recipient;
 
-                    // add new messages that is not already in messages
-                    foreach (Message message in messages)
-                        if (!numbers[cbNumbersList.SelectedIndex].messages.Any(x => x.timestamp == message.timestamp))
-                            numbers[cbNumbersList.SelectedIndex].messages.Add(message);
+                        // add new messages that is not already in messages
+                        foreach (Message message in messages)
+                            if (!numbers[cbNumbersList.SelectedIndex].messages.Any(x => x.timestamp == message.timestamp))
+                                numbers[cbNumbersList.SelectedIndex].messages.Add(message);
 
-                    // sort
-                    numbers[cbNumbersList.SelectedIndex].messages = numbers[cbNumbersList.SelectedIndex].messages.OrderByDescending(x => x.timestamp).ToList();
+                        // sort
+                        numbers[cbNumbersList.SelectedIndex].messages = numbers[cbNumbersList.SelectedIndex].messages.OrderByDescending(x => x.timestamp).ToList();
+                    }
+                    catch { }
                 });
 
                 // get scroll position
@@ -126,8 +154,7 @@ namespace TempPhone
                         {
                             // append from the top (so newest messages are at the top)
                             string[] lines = File.ReadAllLines(logPath);
-                            List<string> newLines = new List<string>();
-                            newLines.Add(log);
+                            List<string> newLines = new List<string> { log };
                             foreach (string line in lines) newLines.Add(line);
                             newLines = newLines.OrderByDescending(x => long.Parse(x.Split('|')[0])).ToList();
                             File.WriteAllLines(logPath, newLines.ToArray());
@@ -141,18 +168,13 @@ namespace TempPhone
                         {
                             // read all lines and add to list, sort by timestamp, then write to file
                             string[] lines = File.ReadAllLines(logPath);
-                            List<string> newLines = new List<string>();
-                            newLines.Add(log);
+                            List<string> newLines = new List<string> { log };
                             foreach (string line in lines) newLines.Add(line);
                             newLines = newLines.OrderByDescending(x => long.Parse(x.Split('|')[0])).ToList();
                             File.WriteAllLines(logPath, newLines.ToArray());
                         }
                     }
                 }
-
-                // if no messages, show "No Messages" in listview
-                if (lvMessages.Items.Count == 0 && isCurrentNumber && !copyMenu.Visible)
-                    lvMessages.Invoke((MethodInvoker)delegate { lvMessages.Items.Add(new ListViewItem(new string[] { "No Messages", "", "" })); });
 
                 lvMessages.Invoke((MethodInvoker)delegate { lvMessages.AutoScrollOffset = scrollpos; }); // set scroll position
                 lvMessages.Invoke((MethodInvoker)delegate
@@ -207,12 +229,23 @@ namespace TempPhone
 
         private void ConnectToWebsocket()
         {
-            quackr_wrapper.ws = new WebSocket(quackr_wrapper.wss);
-            quackr_wrapper.ws.WaitTime = TimeSpan.FromSeconds(5);
-            quackr_wrapper.ws.Connect();
-            quackr_wrapper.ws.OnMessage += Ws_OnMessage;
-            quackr_wrapper.ws.OnError += Ws_OnError;
-            quackr_wrapper.ws.OnClose += Ws_OnClose;
+            try
+            {
+                quackr_wrapper.ws = new WebSocket(settings.wss);
+                quackr_wrapper.ws.WaitTime = TimeSpan.FromSeconds(5);
+                quackr_wrapper.ws.Connect();
+                quackr_wrapper.ws.OnMessage += Ws_OnMessage;
+                quackr_wrapper.ws.OnError += Ws_OnError;
+                quackr_wrapper.ws.OnClose += Ws_OnClose;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.ToString());
+                // reset wss from settings
+                Settings s = new Settings();
+                settings.wss = s.wss;
+                settings.Save();
+            }
         }
 
         private void Ws_OnClose(object sender, CloseEventArgs e)
@@ -338,9 +371,19 @@ namespace TempPhone
         {
             while (true)
             {
-                foreach (var number in numbers)
-                    if (number.logmessages || number.number == numbers[cbNumbersList.SelectedIndex].number)
-                        quackr_wrapper.requestMessages(number.number);
+                this.Invoke((MethodInvoker)delegate
+                {
+                    foreach (var number in numbers)
+                    {
+                        try
+                        {
+                            if (number.logmessages || number.number == numbers[cbNumbersList.SelectedIndex].number)
+                                quackr_wrapper.requestMessages(number.number);
+                        }
+                        catch { }
+                    }
+                        
+                });
 
                 Thread.Sleep(settings.refreshinterval * 1000);
             }

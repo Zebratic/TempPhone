@@ -11,6 +11,7 @@ namespace TempPhone
 {
     public class Settings
     {
+        public string wss { get; set; } = "wss://s-usc1f-nss-2518.firebaseio.com/.ws?v=5&ns=quackr-31041";
         public int refreshinterval { get; set; } = 5; // seconds
         public bool startWithWindows { get; set; } = false;
         public bool startMinimized { get; set; } = false;
